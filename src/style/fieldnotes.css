@@ -1,0 +1,15 @@
+.notes-index__note {
+  border-top: 1px solid var(--color-foreground);
+  padding-top: 1rem;
+  margin-bottom: 3rem;
+}
+
+.fieldnote {
+  position: relative;
+}
+
+.fieldnote h1 {
+  position: absolute;
+  left: 0;
+  width: calc(25% - var(--grid-column-gap));
+}

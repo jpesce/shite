@@ -1,0 +1,36 @@
+@font-face {
+  font-family: "mono";
+  font-weight: normal;
+  src: url("mono-regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "mono";
+  font-weight: bold;
+  src: url("mono-bold.woff2") format("woff2");
+}
+
+:root {
+  /* Color */
+  /* Cozy Gray
+  --color-light: #999999;
+  --color-dark: #202020; */
+
+  --color-light: #D9D9D9;
+  --color-dark: #0D0D0D;
+
+  --color-dark-l1: #2f2f2f;
+  --color-dark-l2: #676767;
+
+  --color-light-d1: #c7c7c7;
+
+  --color-background: var(--color-dark);
+  --color-foreground: var(--color-light);
+
+  /* Typography */
+  --t-base: var(--t-sans-16-regular);
+
+  --t-serif-16-regular: 16px/1.5 'Times New Roman', 'Times', serif;
+  --t-sans-16-regular: 16px/1.65 sans-serif;
+
+  --t-mono-16-uppercase: 16px/1.5 'mono', monospace;
+}

@@ -1,0 +1,9 @@
+.header__pictogram {
+  font-size: 28px;
+  line-height: 100%;
+  margin-bottom: 3rem;
+}
+
+.header__pictogram a {
+  text-decoration: none;
+}
