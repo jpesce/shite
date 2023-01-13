@@ -1,11 +1,20 @@
 #!/bin/bash
 
-# Replace a section of a template for the contents of a file
-# template_inject [content file] [template file] [string to be replaced]
-template_inject() {
-  content_file=$1
+# Replace a string in the template for the contents of a file
+# The string must be in a line by its own
+template_inject_file() {
+  file=$1
   template=$2
-  string_to_be_replaced=$3
+  old_string=$3
 
-  sed -e "/${string_to_be_replaced}/{ r ${content_file}" -e "d" -e "}" ${template}
+  sed -e "/${old_string}/{ r ${file}" -e "d" -e "}" ${template}
+}
+
+template_inject_string() {
+  # TODO: escape new_string
+  new_string=$1
+  template=$2
+  old_string=$3
+
+  sed -e "s/${old_string}/${new_string}/g" ${template}
 }

@@ -1,55 +1,67 @@
 #!/bin/bash
 
-NOTE_SOURCE_DIR=${SOURCE_DIR}/notes
-NOTE_TARGET_DIR=${TARGET_DIR}/
-NOTE_URL=${NOTE_TARGET_DIR#"${NOTE_TARGET_DIR}"}
+NOTES_SOURCE_DIR=${SOURCE_DIR}/notes
+NOTES_TARGET_DIR=${TARGET_DIR} # Put notes directly on /
+NOTES_URL=${NOTES_TARGET_DIR#"${TARGET_DIR}"}
 
-# prepare
-mkdir -p ${NOTE_TARGET_DIR}
+# Prepare
+mkdir -p ${NOTES_TARGET_DIR}
 
-# build
-notes_index_list="<ul class='notes-index__list'>"
-notes=$(ls -tU ${NOTE_SOURCE_DIR}/ | sort -r)
-for note in $notes; do
+# Sort notes by publishDate
+notes=$(ls ${NOTES_SOURCE_DIR}/)
+notes_and_publish_date=()
+for note in ${notes}; do
+  note_date=$(markdown_get_metadata_field "publishDate" ${NOTES_SOURCE_DIR}/${note})
+  notes_and_publish_date+=(${note_date},${note})
+done
+sorted_notes_and_publish_date=$(echo "${notes_and_publish_date[@]}" | tr " " "\n" | sort -r)
+notes=$(echo "${sorted_notes_and_publish_date}" | awk -F "," "//{print \$2}")
+
+# Build notes
+for note in ${notes}; do
   filename=${note%.*}
-  extension=${note##*.}
+  source=${NOTES_SOURCE_DIR}/${note}
+  target=${NOTES_TARGET_DIR}/${filename}/index.html
+  title=$(markdown_get_first_heading ${source})
 
-  source=${NOTE_SOURCE_DIR}/${filename}.${extension}
-  target=${NOTE_TARGET_DIR}/${filename}/index.html
-  tmp_markdown="/tmp/${filename}.md"
-  tmp_file="/tmp/${filename}"
+  mkdir -p ${NOTES_TARGET_DIR}/${filename}
 
-  case $extension in
-    "md")
-      mkdir -p ${NOTE_TARGET_DIR}/${filename}
+  # Build current note
+  markdown_to_html $source > ${target}
+  injected_prose=$(template_inject_file ${target} ${TEMPLATES_DIR}/prose.html "<!--content-->")
+  echo "${injected_prose}" > ${target}
 
-      # build current note
-      remove_frontmatter $source | markdown_to_html > ${tmp_markdown}
-      template_inject ${tmp_markdown} ${TEMPLATES_DIR}/fieldnote.html "<!--fieldnote-->" > ${tmp_file}
-      template_inject ${tmp_file} ${TEMPLATES_DIR}/main.html "<!--content-->" > $target
+  injected_main=$(template_inject_file ${target} ${TEMPLATES_DIR}/main.html "<!--content-->")
+  echo "${injected_main}" > ${target}
 
-      # add note to index list
-      if [ ! ${filename} == "about" ]; then
-        notes_index_list+="
-          <li class='grid-12 notes-index__note'>
-            <div class='grid-column-3'><a href='${NOTE_URL}/${filename}'>${filename}</a></div>
-            <div class='grid-column-6 prose'>$(cat ${tmp_markdown})</div>
-          </li>
-        "
-      fi
-
-      rm ${tmp_file} ${tmp_markdown}
-      ;;
-    *)
-      echo -e "${COLOR_BRIGHT_BLACK}$(date +'%T') ${COLOR_YELLOW}warning${COLOR_RESET}: ${source}: Don't know how to build note extension ${extension}. Skipping…"
-  esac
+  injected_title=$(template_inject_string "${title}" ${target} "<!--title-->")
+  echo "${injected_title}" > ${target}
 done
 
-# build notes index
-target=${NOTE_TARGET_DIR}/index.html
-tmp_file="/tmp/index"
+notes_index_list="<ul class='notes-index__list'>"
+for note in ${notes}; do
+  filename=${note%.*}
+  source=${NOTES_SOURCE_DIR}/${note}
+  title=$(markdown_get_first_heading ${source})
+  publish_date=$(markdown_get_metadata_field "publishDate" ${source})
 
+  # Add current note to index list
+  notes_index_list+="
+    <li class='grid-12 notes-index__note'>
+      <div class='grid-column-3'>${publish_date}</div>
+      <div class='grid-column-3'><a href='${NOTES_URL}/${filename}'><h2>${title}</h2></a></div>
+    </li>
+  "
+done
 notes_index_list+="</ul>"
-echo ${notes_index_list} > ${tmp_file}
 
-template_inject ${tmp_file} ${TEMPLATES_DIR}/main.html "<!--content-->" > $target
+# Build the index
+target=${TARGET_DIR}/index.html
+tmp_file="${TMP_DIR}/index"
+
+echo "${notes_index_list}" > ${tmp_file}
+injected_main=$(template_inject_file ${tmp_file} ${TEMPLATES_DIR}/main.html "<!--content-->")
+echo "${injected_main}" > ${target}
+
+injected_title=$(template_inject_string "pesce.cc" ${target} "<!--title-->")
+echo "${injected_title}" > ${target}

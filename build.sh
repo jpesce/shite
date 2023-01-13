@@ -1,42 +1,56 @@
 #!/bin/bash
 
-# force script to run from the script's base directory to avoid relative path
-# issues
+# Force user to run script from the base directory to avoid relative path issues
 if [[ $BASH_SOURCE = */* ]]; then cd -- "${BASH_SOURCE%/*}/"; fi
-if [[ ! -e build.sh ]]; then echo "Please cd into the script directory before running"; exit 1; fi
+if [[ ! -e build.sh ]]; then echo "cd into the script directory before running"; exit 1; fi
 
-# globals
-SOURCE_DIR="./src"
+# Exit on error
+set -e
+
+# Globals
+SOURCE_DIR="./source"
 TEMPLATES_DIR="${SOURCE_DIR}/templates"
-TARGET_DIR="./dist"
+TARGET_DIR="./output"
+
 LIB_DIR="./lib"
 TMP_DIR="./tmp"
 
-# libraries
+# Libraries
 source ${LIB_DIR}/shell_colors.sh
 source ${LIB_DIR}/markdown_engine.sh
 source ${LIB_DIR}/template_engine.sh
 
-# clean
+# Run with -w to watch changes
+# Requires browser-sync and fswatch
+while getopts "w" opt; do
+  case ${opt} in
+    w)
+      ./build.sh
+      (trap 'kill 0' SIGINT; browser-sync --no-ui --no-notify --server --watch ${TARGET_DIR} ${TARGET_DIR} & fswatch --latency 0.1 --one-per-batch -0 ${SOURCE_DIR} ${LIB_DIR} *.sh | xargs -0 -n1 -I{} ./build.sh)
+      ;;
+  esac
+done
+
+# Clean
+echo -e "${COLOR_BRIGHT_BLACK}$(date +"%T") ${COLOR_BLUE}info${COLOR_RESET}: Cleaning…"
+rm -rf ${TARGET_DIR}
+rm -rf ${TMP_DIR}
 mkdir -p ${TARGET_DIR}
 mkdir -p ${TMP_DIR}
 
-# build
-echo -e "${COLOR_BRIGHT_BLACK}$(date +"%T") ${COLOR_BLUE}info${COLOR_RESET}: Building images…"
-source build_images.sh
-echo -e "${COLOR_BRIGHT_BLACK}$(date +"%T") ${COLOR_BLUE}info${COLOR_RESET}: Done building images"
+# Get stats
+source build_stats.sh
 
-echo -e "${COLOR_BRIGHT_BLACK}$(date +"%T") ${COLOR_BLUE}info${COLOR_RESET}: Building style…"
-source build_style.sh
-echo -e "${COLOR_BRIGHT_BLACK}$(date +"%T") ${COLOR_BLUE}info${COLOR_RESET}: Done building style"
+# Build
+# Copy style and images
+cp -r ${SOURCE_DIR}/images ${TARGET_DIR}/images
+cp -r ${SOURCE_DIR}/style ${TARGET_DIR}/style
 
-# echo -e "${COLOR_BRIGHT_BLACK}$(date +"%T") ${COLOR_BLUE}info${COLOR_RESET}: Building index…"
-# source build_index.sh
-# echo -e "${COLOR_BRIGHT_BLACK}$(date +"%T") ${COLOR_BLUE}info${COLOR_RESET}: Done building index"
-
+# Build Notes
 echo -e "${COLOR_BRIGHT_BLACK}$(date +"%T") ${COLOR_BLUE}info${COLOR_RESET}: Building notes…"
 source build_notes.sh
-echo -e "${COLOR_BRIGHT_BLACK}$(date +"%T") ${COLOR_BLUE}info${COLOR_RESET}: Done building notes"
 
-# clean
+# Clean
 rm -rf ${TMP_DIR}
+echo -e "${COLOR_BRIGHT_BLACK}$(date +"%T") ${COLOR_BLUE}info${COLOR_RESET}: Done"
+
