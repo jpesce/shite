@@ -26,7 +26,8 @@ html {
 
 }
 body {
-scrollbar-color: red yellow;
+  padding-top: 12rem;
+  padding-bottom: 12rem;
 }
 
 code, kbd, pre, samp {

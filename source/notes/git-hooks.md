@@ -9,14 +9,10 @@ hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks#_committing_work
 
 ## What are git hooks?
 
-Git hooks are scripts that automatically run commands such as convenient sanity
-checks before (or after) you make changes to a repository. For example, you can
-automatically run stuff like tests, lint checks, automatic formatting and other
-goodies that help you not push crappy code to the project.
-
-There are third party libraries you could use to deal with them, but managing
-them natively is not hard, which means one less dependency in your life. And
-_everyone_ loves less dependencies.
+Git hooks are scripts that automatically run before (or after) you make changes
+to a repository. For example, you can automatically run tests, lint checks,
+automatic formatting and other niceties that help you push better code to the
+project.
 
 ## How hooks work
 
@@ -35,7 +31,7 @@ read -p "Are you really really sure? (y/n) "
 ```
 
 This will prompt the user to confirm if they **really really** want to commit
-the changes. Menancing, but I’m not sure how effective.
+the changes. Menancing, but I’m not sure if effective.
 
 ## Tracking git hooks
 
@@ -54,11 +50,11 @@ Now everyone has the directory in the repo, but git is looking for the hooks in
 the wrong place: the default directory. To use them, each contributor must
 manually configure their repo to use `.githooks` as their hooks path. Bummer. 
 
-_However_, to make life easier for everyone, you can add the config command to
-your project’s setup pipeline. 
+However, to make life easier for everyone, you can add the config command to
+your project’s setup script. 
 
-For example, if you’re in a project with a package manager that uses
-`package.json` and has a `prepare` script:
+For example, if your project has a `package.json` you can add a `prepare`
+script:
 ```bash
 "scripts": {
   ...
@@ -66,8 +62,8 @@ For example, if you’re in a project with a package manager that uses
 }
 ```
 
-This will make the git look for hooks in the correct place as soon as they
-install the project’s dependencies.
+This will make git look for hooks in the correct place as soon as they `yarn
+install`.
 
 ## Useful git hooks
 
@@ -75,7 +71,7 @@ Now that we’ve put everyone in the same page and we’re all using the same ho
 we can create useful things.
 
 ### Example 1: Force everyone to use commitizen when commiting
-Not cool, but... When commiting, commitzen will help the user form a
+Not cool, but... When commiting, commitzen will open and help the user form a
 conventional commit message. Add to `.git/hooks/prepare-commit-msg`:
 ```bash
 #!/bin/sh
@@ -87,8 +83,8 @@ yarn cz --hook || true
 ```
 
 ### Example 2: Lint commit messages with commitlint
-Much more sane. If the user tries to commit changes with a non-conventional
-message, abort (if they want to, they can use commitzen to help them). Add to
+Much saner. If the user tries to commit changes with a non-conventional message,
+abort (if they want to, they can use commitzen to help them). Add to
 `.githooks/commit-msg`:
 ```bash
 #!/bin/sh
@@ -107,14 +103,22 @@ When commiting, check files for lint errors with eslint. Add to
 eslint --ext jsx,.js ./
 ```
 
-### Example 4: Lint code only on staged files
-When commiting, check only staged files for lint errors, without any special
-dependencies for that (\*cough\* lint-staged \*cought\*) of course. Add to
+### Example 4: Run prettier only on staged files
+When commiting, run code formatting only on staged files.  Add to
 `.githooks/pre-commit`:
 ```bash
 #!/bin/sh
 
-yarn eslint --ext jsx,.js $(git diff --staged --name-only --diff-filter=ACMRTUXB)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | sed 's| |\\ |g')
+[ -z "$STAGED_FILES" ] && exit 0
+
+# Prettify staged files
+echo "$STAGED_FILES" | xargs ./node_modules/.bin/prettier --ignore-unknown --write
+
+# Add back the files to staging
+echo "$STAGED_FILES" | xargs git add
+
+exit 0
 ```
 
 ## List of all commit hooks

@@ -17,14 +17,10 @@
 href="https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks#_committing_workflow_hooks">commiting-workflow
 hooks</a>.</p>
 <h2 id="what-are-git-hooks">What are git hooks?</h2>
-<p>Git hooks are scripts that automatically run commands such as
-convenient sanity checks before (or after) you make changes to a
-repository. For example, you can automatically run stuff like tests,
-lint checks, automatic formatting and other goodies that help you not
-push crappy code to the project.</p>
-<p>There are third party libraries you could use to deal with them, but
-managing them natively is not hard, which means one less dependency in
-your life. And <em>everyone</em> loves less dependencies.</p>
+<p>Git hooks are scripts that automatically run before (or after) you
+make changes to a repository. For example, you can automatically run
+tests, lint checks, automatic formatting and other niceties that help
+you push better code to the project.</p>
 <h2 id="how-hooks-work">How hooks work</h2>
 <p>By default, git hooks live in <code>.git/hooks</code> inside the
 repo. For example, to automatically run a command before committing,
@@ -40,7 +36,7 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="kw">[[</span> <span class="va">$REPLY</span> <span class="ot">==</span> <span class="st">&quot;y&quot;</span> <span class="kw">]]</span> <span class="kw">&amp;&amp;</span> <span class="bu">exit</span> 0 <span class="kw">||</span> <span class="bu">exit</span> 1</span></code></pre></div>
 <p>This will prompt the user to confirm if they <strong>really
 really</strong> want to commit the changes. Menancing, but I’m not sure
-how effective.</p>
+if effective.</p>
 <h2 id="tracking-git-hooks">Tracking git hooks</h2>
 <p>The problem is that <code>.git/hooks</code> is a private directory,
 which means hooks will only be available locally and not for everyone
@@ -55,25 +51,25 @@ use the hooks</h2>
 the hooks in the wrong place: the default directory. To use them, each
 contributor must manually configure their repo to use
 <code>.githooks</code> as their hooks path. Bummer.</p>
-<p><em>However</em>, to make life easier for everyone, you can add the
-config command to your project’s setup pipeline.</p>
-<p>For example, if you’re in a project with a package manager that uses
-<code>package.json</code> and has a <code>prepare</code> script:</p>
+<p>However, to make life easier for everyone, you can add the config
+command to your project’s setup script.</p>
+<p>For example, if your project has a <code>package.json</code> you can
+add a <code>prepare</code> script:</p>
 <div class="sourceCode" id="cb3"><pre
 class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;scripts&quot;</span><span class="ex">:</span> {</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">...</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;prepare&quot;</span><span class="ex">:</span> <span class="st">&quot;git config --local core.hooksPath .githooks&quot;</span></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="er">}</span></span></code></pre></div>
-<p>This will make the git look for hooks in the correct place as soon as
-they install the project’s dependencies.</p>
+<p>This will make git look for hooks in the correct place as soon as
+they <code>yarn install</code>.</p>
 <h2 id="useful-git-hooks">Useful git hooks</h2>
 <p>Now that we’ve put everyone in the same page and we’re all using the
 same hooks, we can create useful things.</p>
 <h3
 id="example-1-force-everyone-to-use-commitizen-when-commiting">Example
 1: Force everyone to use commitizen when commiting</h3>
-<p>Not cool, but… When commiting, commitzen will help the user form a
-conventional commit message. Add to
+<p>Not cool, but… When commiting, commitzen will open and help the user
+form a conventional commit message. Add to
 <code>.git/hooks/prepare-commit-msg</code>:</p>
 <div class="sourceCode" id="cb4"><pre
 class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/sh</span></span>
@@ -84,7 +80,7 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">yarn</span> cz <span class="at">--hook</span> <span class="kw">||</span> <span class="fu">true</span></span></code></pre></div>
 <h3 id="example-2-lint-commit-messages-with-commitlint">Example 2: Lint
 commit messages with commitlint</h3>
-<p>Much more sane. If the user tries to commit changes with a
+<p>Much saner. If the user tries to commit changes with a
 non-conventional message, abort (if they want to, they can use commitzen
 to help them). Add to <code>.githooks/commit-msg</code>:</p>
 <div class="sourceCode" id="cb5"><pre
@@ -100,15 +96,23 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Lint all jsx and js files</span></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">eslint</span> <span class="at">--ext</span> jsx,.js ./</span></code></pre></div>
-<h3 id="example-4-lint-code-only-on-staged-files">Example 4: Lint code
-only on staged files</h3>
-<p>When commiting, check only staged files for lint errors, without any
-special dependencies for that (*cough* lint-staged *cought*) of course.
-Add to <code>.githooks/pre-commit</code>:</p>
+<h3 id="example-4-run-prettier-only-on-staged-files">Example 4: Run
+prettier only on staged files</h3>
+<p>When commiting, run code formatting only on staged files. Add to
+<code>.githooks/pre-commit</code>:</p>
 <div class="sourceCode" id="cb7"><pre
 class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/sh</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">yarn</span> eslint <span class="at">--ext</span> jsx,.js <span class="va">$(</span><span class="fu">git</span> diff <span class="at">--staged</span> <span class="at">--name-only</span> <span class="at">--diff-filter</span><span class="op">=</span>ACMRTUXB<span class="va">)</span></span></code></pre></div>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="va">STAGED_FILES</span><span class="op">=</span><span class="va">$(</span><span class="fu">git</span> diff <span class="at">--cached</span> <span class="at">--name-only</span> <span class="at">--diff-filter</span><span class="op">=</span>ACMR <span class="kw">|</span> <span class="fu">sed</span> <span class="st">&#39;s| |\\ |g&#39;</span><span class="va">)</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="bu">[</span> <span class="ot">-z</span> <span class="st">&quot;</span><span class="va">$STAGED_FILES</span><span class="st">&quot;</span> <span class="bu">]</span> <span class="kw">&amp;&amp;</span> <span class="bu">exit</span> 0</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Prettify staged files</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;</span><span class="va">$STAGED_FILES</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="fu">xargs</span> ./node_modules/.bin/prettier <span class="at">--ignore-unknown</span> <span class="at">--write</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Add back the files to staging</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;</span><span class="va">$STAGED_FILES</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="fu">xargs</span> git add</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="bu">exit</span> 0</span></code></pre></div>
 <h2 id="list-of-all-commit-hooks">List of all commit hooks</h2>
 <p>To get a list of all hooks you can use and when they are executed
 just <abbr
